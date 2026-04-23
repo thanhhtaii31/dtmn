@@ -3,6 +3,10 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+pd.set_option('display.max_columns', None)
+pd.set_option('display.width', 10000)
+pd.set_option('display.max_colwidth', None)
+
 PATH_1 = r"C:\Users\ADMIN\PycharmProjects\PythonProject\VNM_Finan.csv"
 PATH_2 = r"C:\Users\ADMIN\PycharmProjects\PythonProject\VNM_price.csv"
 NEW_PATH_1 = r"C:\Users\ADMIN\PycharmProjects\PythonProject\VNM_finance_reverse.csv"
@@ -35,15 +39,40 @@ def clean_data():
 
 
 def ex1(df1, df2):
-    stats1 = df1.describe()
-    var1 = df1.var(numeric_only=True)
-    stats2 = df2.describe()
-    var2 = df2.var(numeric_only=True)
+    # Dictionary dịch sang tiếng Việt
+    rename_dict = {
+        'mean': 'Trung bình',
+        'std': 'Độ lệch chuẩn',
+        'min': 'Thấp nhất',
+        '25%': 'Tứ phân vị 1 (Q1)',
+        '50%': 'Trung vị (Q2)',
+        '75%': 'Tứ phân vị 3 (Q3)',
+        'max': 'Cao nhất',
+        'variance': 'Phương sai'
+    }
 
-    print("các thông số cho tài chính")
-    print(stats1, var1)
-    print("các thông số cổ phiếu")
-    print(stats2, var2)
+    # Xử lý thống kê cho Tài chính
+    stats1 = df1.describe().T
+    stats1['variance'] = df1.var(numeric_only=True)
+    if 'count' in stats1.columns:
+        stats1 = stats1.drop(columns='count')
+    stats1 = stats1.rename(columns=rename_dict)
+
+    # Xử lý thống kê cho Cổ phiếu
+    stats2 = df2.describe().T
+    stats2['variance'] = df2.var(numeric_only=True)
+    if 'count' in stats2.columns:
+        stats2 = stats2.drop(columns='count')
+    stats2 = stats2.rename(columns=rename_dict)
+
+    print("--- THỐNG KÊ TÀI CHÍNH ---")
+    print(stats1)
+    print("\n--- THỐNG KÊ CỔ PHIẾU ---")
+    print(stats2)
+
+    # Xuất file CSV
+    stats1.to_csv('VNM_Thong_Ke_Tai_Chinh.csv', encoding='utf-8-sig')
+    stats2.to_csv('VNM_Thong_Ke_Co_Phieu.csv', encoding='utf-8-sig')
 
     df2_idx = pd.to_datetime(df2.index, dayfirst=True, errors='coerce')
     df_plot = df2.copy()
@@ -115,35 +144,26 @@ def preprocessing(df1, df2):
                                   left_index=True, right_index=True, how='inner')
 
     df_final.to_csv('VNM_Du_Lieu_Tong_Hop.csv', encoding='utf-8-sig')
-    print("--- THÀNH CÔNG: Đã tạo file VNM_Du_Lieu_Tong_Hop.csv ---")
     return df_final
 
 
 def ex4(df_final):
-    # 1. Yêu cầu báo cáo: In 5 dòng đầu tiên của bộ dữ liệu mới
     print("\n--- 5 DÒNG ĐẦU TIÊN CỦA BỘ DỮ LIỆU TỔNG HỢP ---")
     print(df_final.head())
 
-    # 2. Tính độ tương quan Pearson
-    # Phương pháp này đo lường mối quan hệ tuyến tính giữa các biến (-1 đến 1)
     correlation_matrix = df_final.corr()
-
-    # Lấy riêng tương quan của các chỉ số với 'Giá đóng cửa'
     price_correlation = correlation_matrix['Giá đóng cửa'].sort_values(ascending=False)
 
     print("\n--- ĐỘ TƯƠNG QUAN PEARSON VỚI GIÁ ĐÓNG CỬA ---")
     print(price_correlation)
 
-    # 3. Vẽ biểu đồ Ma trận tương quan (Heatmap)
     plt.figure(figsize=(12, 10))
     sns.heatmap(correlation_matrix, annot=True, cmap='RdYlGn', fmt=".2f")
     plt.title('Ma trận tương quan Pearson giữa Tài chính và Giá cổ phiếu (VNM)', fontsize=16)
     plt.tight_layout()
     plt.show()
 
-    # 4. Vẽ biểu đồ cột để so sánh các yếu tố tác động
     plt.figure(figsize=(10, 6))
-    # Bỏ chính nó (Giá đóng cửa) ra khỏi biểu đồ để dễ nhìn các yếu tố khác
     factors_only = price_correlation.drop(['Giá đóng cửa', 'Thay đổi giá', '% thay đổi'], errors='ignore')
     factors_only.plot(kind='bar', color='skyblue')
     plt.axhline(0, color='black', linewidth=0.8)
@@ -154,15 +174,16 @@ def ex4(df_final):
     plt.tight_layout()
     plt.show()
 
-    # 5. Kết luận dựa trên số liệu
     top_factor = factors_only.abs().idxmax()
     top_value = factors_only[top_factor]
     print(f"\n=> KẾT LUẬN: Chỉ số có ảnh hưởng mạnh nhất đến giá là: {top_factor} ({top_value:.2f})")
 
     return price_correlation
 
+
 if __name__ == '__main__':
     df1, df2 = clean_data()
     ex1(df1, df2)
     df_final = preprocessing(df1, df2)
-    ex4(df_final)
+    if df_final is not None:
+        ex4(df_final)
