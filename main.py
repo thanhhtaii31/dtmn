@@ -39,7 +39,6 @@ def clean_data():
 
 
 def ex1(df1, df2):
-    # Dictionary dịch sang tiếng Việt
     rename_dict = {
         'mean': 'Trung bình',
         'std': 'Độ lệch chuẩn',
@@ -51,14 +50,12 @@ def ex1(df1, df2):
         'variance': 'Phương sai'
     }
 
-    # Xử lý thống kê cho Tài chính
     stats1 = df1.describe().T
     stats1['variance'] = df1.var(numeric_only=True)
     if 'count' in stats1.columns:
         stats1 = stats1.drop(columns='count')
     stats1 = stats1.rename(columns=rename_dict)
 
-    # Xử lý thống kê cho Cổ phiếu
     stats2 = df2.describe().T
     stats2['variance'] = df2.var(numeric_only=True)
     if 'count' in stats2.columns:
@@ -70,7 +67,6 @@ def ex1(df1, df2):
     print("\n--- THỐNG KÊ CỔ PHIẾU ---")
     print(stats2)
 
-    # Xuất file CSV
     stats1.to_csv('VNM_Thong_Ke_Tai_Chinh.csv', encoding='utf-8-sig')
     stats2.to_csv('VNM_Thong_Ke_Co_Phieu.csv', encoding='utf-8-sig')
 
@@ -107,10 +103,7 @@ def preprocessing(df1, df2):
     for q_label in df1.index:
         try:
             chot_quy = get_end(q_label)
-            bat_dau = chot_quy - pd.Timedelta(days=14)
-            ket_thuc = chot_quy + pd.Timedelta(days=14)
-
-            mask = (df2.index >= bat_dau) & (df2.index <= ket_thuc)
+            mask = (df2.index >= chot_quy - pd.Timedelta(days=14)) & (df2.index <= chot_quy + pd.Timedelta(days=14))
             data = df2.loc[mask, 'GIÁ ĐÓNG CỬA']
 
             if not data.empty:
@@ -128,8 +121,7 @@ def preprocessing(df1, df2):
     df_price_q = pd.DataFrame(price_each_quarter).set_index('CHỈ TIÊU')
     df_price_q = df_price_q.sort_values('Timeline')
 
-    df_price_q['Thay đổi giá'] = df_price_q['Giá đóng cửa'].diff()
-    df_price_q['% thay đổi'] = df_price_q['Giá đóng cửa'].pct_change() * 100
+    # Đã loại bỏ các cột "Thay đổi giá" và "% thay đổi" ở đây theo yêu cầu
 
     cols_tai_chinh = [
         'Biên lợi nhuận gộp', 'Biên lợi nhuận ròng', 'P/E', 'EPS (VNĐ/CP)',
@@ -140,6 +132,7 @@ def preprocessing(df1, df2):
     available_cols = [c for c in cols_tai_chinh if c in df1.columns]
     df1_filtered = df1[available_cols]
 
+    # Gộp dữ liệu chỉ giữ lại Giá đóng cửa
     df_final = df1_filtered.merge(df_price_q.drop(columns=['Timeline']),
                                   left_index=True, right_index=True, how='inner')
 
@@ -151,19 +144,18 @@ def ex4(df_final):
     print("\n--- 5 DÒNG ĐẦU TIÊN CỦA BỘ DỮ LIỆU TỔNG HỢP ---")
     print(df_final.head())
 
-    # Tính toán tương quan Pearson
     correlation_matrix = df_final.corr()
     price_correlation = correlation_matrix['Giá đóng cửa'].sort_values(ascending=False)
 
     print("\n--- ĐỘ TƯƠNG QUAN PEARSON VỚI GIÁ ĐÓNG CỬA ---")
     print(price_correlation)
 
-    # Chỉ vẽ biểu đồ cột để so sánh mức độ ảnh hưởng của các yếu tố
     plt.figure(figsize=(12, 6))
-    factors_only = price_correlation.drop(['Giá đóng cửa', 'Thay đổi giá', '% thay đổi'], errors='ignore')
+    # Biểu đồ giờ chỉ còn các chỉ số tài chính so với Giá đóng cửa
+    factors_only = price_correlation.drop(['Giá đóng cửa'], errors='ignore')
     factors_only.plot(kind='bar', color='skyblue')
     plt.axhline(0, color='black', linewidth=0.8)
-    plt.title('Mức độ ảnh hưởng của các chỉ số tài chính đến Giá VNM (Hệ số Pearson)', fontsize=14)
+    plt.title('Mức độ ảnh hưởng của các chỉ số tài chính đến Giá VNM', fontsize=14)
     plt.ylabel('Hệ số tương quan')
     plt.xticks(rotation=45, ha='right')
     plt.grid(axis='y', linestyle='--', alpha=0.7)
