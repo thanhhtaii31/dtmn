@@ -81,9 +81,9 @@ def ex1(df1, df2):
 
     plt.figure(figsize=(20, 10))
     plt.plot(df_plot.index, df_plot['GIÁ ĐÓNG CỬA'], color='blue', linewidth=2, label='Giá đóng cửa')
-    plt.title('Biến động giá cổ phiếu', fontsize=20, color='red', fontweight='bold')
+    plt.title('Biến động giá cổ phiếu VNM', fontsize=20, color='red', fontweight='bold')
     plt.xlabel('Thời gian', fontsize=15)
-    plt.ylabel('Giá', fontsize=15)
+    plt.ylabel('Giá (VNĐ)', fontsize=15)
     plt.grid()
     plt.show()
 
@@ -151,23 +151,19 @@ def ex4(df_final):
     print("\n--- 5 DÒNG ĐẦU TIÊN CỦA BỘ DỮ LIỆU TỔNG HỢP ---")
     print(df_final.head())
 
+    # Tính toán tương quan Pearson
     correlation_matrix = df_final.corr()
     price_correlation = correlation_matrix['Giá đóng cửa'].sort_values(ascending=False)
 
     print("\n--- ĐỘ TƯƠNG QUAN PEARSON VỚI GIÁ ĐÓNG CỬA ---")
     print(price_correlation)
 
-    plt.figure(figsize=(12, 10))
-    sns.heatmap(correlation_matrix, annot=True, cmap='RdYlGn', fmt=".2f")
-    plt.title('Ma trận tương quan Pearson giữa Tài chính và Giá cổ phiếu (VNM)', fontsize=16)
-    plt.tight_layout()
-    plt.show()
-
-    plt.figure(figsize=(10, 6))
+    # Chỉ vẽ biểu đồ cột để so sánh mức độ ảnh hưởng của các yếu tố
+    plt.figure(figsize=(12, 6))
     factors_only = price_correlation.drop(['Giá đóng cửa', 'Thay đổi giá', '% thay đổi'], errors='ignore')
     factors_only.plot(kind='bar', color='skyblue')
     plt.axhline(0, color='black', linewidth=0.8)
-    plt.title('Mức độ ảnh hưởng của các chỉ số tài chính đến Giá VNM', fontsize=14)
+    plt.title('Mức độ ảnh hưởng của các chỉ số tài chính đến Giá VNM (Hệ số Pearson)', fontsize=14)
     plt.ylabel('Hệ số tương quan')
     plt.xticks(rotation=45, ha='right')
     plt.grid(axis='y', linestyle='--', alpha=0.7)
